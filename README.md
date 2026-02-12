@@ -115,12 +115,13 @@ Configuration is split into two privilege levels:
 1. **`generate_config.php`** runs as root via configd, reads the OPNsense model,
    discovers collectors, merges defaults with user overrides, and writes a JSON
    config file to `/usr/local/etc/metrics_exporter.conf`
-2. **`metrics_exporter.php`** (daemon) runs as `nobody`, reads the JSON config,
-   and invokes each enabled collector's `collect()` method
+2. **`metrics_exporter.php`** (daemon) runs as root via configd's `daemon`
+   wrapper, reads the JSON config, and invokes each enabled collector's
+   `collect()` method
 
-Collectors that need root-level data (e.g., PF stats via `pfctl`) use
-`\OPNsense\Core\Backend` to call configd actions rather than running
-privileged commands directly.
+The daemon runs as root because collectors like PF need privileged access
+(e.g., `pfctl` via `\OPNsense\Core\Backend` configd actions). This is
+consistent with how other OPNsense plugin daemons operate.
 
 Hardening:
 - Output directory validated with strict regex (absolute path, no `..`)

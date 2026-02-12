@@ -11,20 +11,25 @@
         // Load available collectors and render checkboxes
         ajaxCall("/api/metricsexporter/general/collectors", {}, function(data, status) {
             if (status === "success" && data['collectors']) {
-                var container = $("#collectorsContainer");
-                container.empty();
+                var tbody = $("#collectorsTableBody");
+                tbody.empty();
                 $.each(data['collectors'], function(idx, col) {
                     var checked = col.enabled ? ' checked="checked"' : '';
-                    var row = '<div class="form-group">' +
-                        '<label class="col-md-3 control-label">' +
-                        $('<span>').text(col.name).html() +
-                        '</label>' +
-                        '<div class="col-md-5">' +
+                    var row = '<tr>' +
+                        '<td>' +
+                        '<div class="control-label">' +
+                        '<i class="fa fa-info-circle text-muted"></i> ' +
+                        '<b>' + $('<span>').text(col.name).html() + '</b>' +
+                        '</div>' +
+                        '</td>' +
+                        '<td>' +
                         '<input type="checkbox" class="collector-toggle" ' +
                         'data-type="' + $('<span>').text(col.type).html() + '"' +
                         checked + ' />' +
-                        '</div></div>';
-                    container.append(row);
+                        '</td>' +
+                        '<td></td>' +
+                        '</tr>';
+                    tbody.append(row);
                 });
             }
         });
@@ -65,12 +70,28 @@
 <div class="content-box" style="padding-bottom: 1.5em;">
     {{ partial("layout_partials/base_form", ['fields':generalForm,'id':'frm_general_settings']) }}
 
-    <div class="col-md-12">
-        <hr />
-        <h2>{{ lang._('Collectors') }}</h2>
-    </div>
-    <div id="collectorsContainer" class="col-md-12">
-        <div class="text-muted">{{ lang._('Loading collectors...') }}</div>
+    <div class="table-responsive">
+        <table class="table table-striped table-condensed" style="table-layout: fixed; width: 100%;">
+            <colgroup>
+                <col style="width: 25%;" />
+                <col style="width: 40%;" />
+                <col style="width: 35%;" />
+            </colgroup>
+            <thead style="cursor: pointer;">
+                <tr>
+                    <th colspan="3">
+                        <div style="padding-bottom: 5px; padding-top: 5px; font-size: 16px;">
+                            <i class="fa fa-angle-down" aria-hidden="true"></i>
+                            &nbsp;
+                            <b>{{ lang._('Collectors') }}</b>
+                        </div>
+                    </th>
+                </tr>
+            </thead>
+            <tbody id="collectorsTableBody">
+                <tr><td colspan="3" class="text-muted">{{ lang._('Loading collectors...') }}</td></tr>
+            </tbody>
+        </table>
     </div>
 
     <div class="col-md-12">

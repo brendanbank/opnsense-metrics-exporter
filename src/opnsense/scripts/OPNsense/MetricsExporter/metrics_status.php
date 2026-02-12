@@ -47,12 +47,16 @@ $collectors_output = [];
 foreach ($all_collectors as $type => $class) {
     if (!empty($config_collectors[$type])) {
         try {
-            $collectors_output[] = $class::status();
+            $collectors_output[] = [
+                'type' => $type,
+                'name' => $class::name(),
+                'metrics' => $class::collect(),
+            ];
         } catch (\Throwable $e) {
             $collectors_output[] = [
                 'type' => $type,
                 'name' => $class::name(),
-                'rows' => [],
+                'metrics' => '',
             ];
         }
     }

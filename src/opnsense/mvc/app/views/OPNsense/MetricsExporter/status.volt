@@ -6,86 +6,6 @@
             return $('<span>').text(str).html();
         }
 
-        function statusLabel(status) {
-            switch (status) {
-                case 'none':
-                    return '<span class="label label-success">Online</span>';
-                case 'down':
-                case 'force_down':
-                    return '<span class="label label-danger">Offline</span>';
-                case 'loss':
-                    return '<span class="label label-warning">Packetloss</span>';
-                case 'delay':
-                    return '<span class="label label-warning">Latency</span>';
-                case 'delay+loss':
-                    return '<span class="label label-warning">Latency, Packetloss</span>';
-                default:
-                    return '<span class="label label-default">Pending</span>';
-            }
-        }
-
-        function renderGatewayCollector(collector) {
-            var html = '<h3>' + escapeHtml(collector.name) + '</h3>';
-            html += '<table class="table table-striped table-condensed">';
-            html += '<thead><tr>' +
-                '<th>{{ lang._("Gateway") }}</th>' +
-                '<th>{{ lang._("Description") }}</th>' +
-                '<th>{{ lang._("Status") }}</th>' +
-                '<th>{{ lang._("Delay") }}</th>' +
-                '<th>{{ lang._("Stddev") }}</th>' +
-                '<th>{{ lang._("Loss") }}</th>' +
-                '<th>{{ lang._("Monitor") }}</th>' +
-                '</tr></thead><tbody>';
-
-            if (collector.rows && collector.rows.length > 0) {
-                $.each(collector.rows, function(idx, gw) {
-                    html += '<tr>' +
-                        '<td>' + escapeHtml(gw.name) + '</td>' +
-                        '<td>' + escapeHtml(gw.description) + '</td>' +
-                        '<td>' + statusLabel(gw.status) + '</td>' +
-                        '<td>' + escapeHtml(gw.delay !== '~' ? gw.delay : '-') + '</td>' +
-                        '<td>' + escapeHtml(gw.stddev !== '~' ? gw.stddev : '-') + '</td>' +
-                        '<td>' + escapeHtml(gw.loss !== '~' ? gw.loss : '-') + '</td>' +
-                        '<td>' + escapeHtml(gw.monitor) + '</td>' +
-                        '</tr>';
-                });
-            } else {
-                html += '<tr><td colspan="7">{{ lang._("No data available.") }}</td></tr>';
-            }
-
-            html += '</tbody></table>';
-            return html;
-        }
-
-        function renderGenericCollector(collector) {
-            var html = '<h3>' + escapeHtml(collector.name) + '</h3>';
-            html += '<table class="table table-striped table-condensed">';
-
-            if (collector.rows && collector.rows.length > 0) {
-                // Build header from keys of first row
-                var keys = Object.keys(collector.rows[0]);
-                html += '<thead><tr>';
-                $.each(keys, function(i, key) {
-                    html += '<th>' + escapeHtml(key) + '</th>';
-                });
-                html += '</tr></thead><tbody>';
-
-                $.each(collector.rows, function(idx, row) {
-                    html += '<tr>';
-                    $.each(keys, function(i, key) {
-                        html += '<td>' + escapeHtml(String(row[key] || '')) + '</td>';
-                    });
-                    html += '</tr>';
-                });
-            } else {
-                html += '<tbody>';
-                html += '<tr><td>{{ lang._("No data available.") }}</td></tr>';
-            }
-
-            html += '</tbody></table>';
-            return html;
-        }
-
         function loadStatus() {
             $("#btnRefreshProgress").addClass("fa-spinner fa-pulse");
             ajaxCall("/api/metricsexporter/status/collector", {}, function(data, status) {
@@ -97,11 +17,12 @@
                         );
                     } else {
                         $.each(data['collectors'], function(idx, collector) {
-                            var html;
-                            if (collector.type === 'gateway') {
-                                html = renderGatewayCollector(collector);
+                            var html = '<h3>' + escapeHtml(collector.name) + '</h3>';
+                            if (collector.metrics) {
+                                html += '<pre style="font-size: 12px; max-height: 500px; overflow-y: auto;">' +
+                                    escapeHtml(collector.metrics) + '</pre>';
                             } else {
-                                html = renderGenericCollector(collector);
+                                html += '<p class="text-muted">{{ lang._("No metrics available.") }}</p>';
                             }
                             $("#collectorsContent").append(html);
                         });

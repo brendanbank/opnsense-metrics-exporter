@@ -1,4 +1,3 @@
-#!/usr/local/bin/php
 <?php
 
 /*
@@ -27,42 +26,15 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-require_once __DIR__ . '/lib/collector_loader.php';
-
-define('CONFIG_PATH', '/usr/local/etc/metrics_exporter.conf');
-define('COLLECTORS_DIR', __DIR__ . '/collectors');
-
-$config_collectors = [];
-$json = @file_get_contents(CONFIG_PATH);
-if ($json !== false) {
-    $config = json_decode($json, true);
-    if ($config !== null) {
-        $config_collectors = $config['collectors'] ?? [];
-    }
+/**
+ * Escape a label value for Prometheus exposition format.
+ * Backslash, double-quote, and newline must be escaped.
+ */
+function prom_escape($value)
+{
+    return str_replace(
+        ['\\', '"', "\n"],
+        ['\\\\', '\\"', '\\n'],
+        (string)$value
+    );
 }
-
-$all_collectors = load_collectors(COLLECTORS_DIR);
-$collectors_output = [];
-
-foreach ($all_collectors as $type => $class) {
-    if (!empty($config_collectors[$type])) {
-        try {
-            $collectors_output[] = $class::status();
-        } catch (\Throwable $e) {
-            $collectors_output[] = [
-                'type' => $type,
-                'name' => $class::name(),
-                'rows' => [],
-            ];
-        }
-    }
-}
-
-$result = [
-    'collectors' => $collectors_output,
-    'node_exporter_installed' => file_exists(
-        '/usr/local/etc/inc/plugins.inc.d/node_exporter.inc'
-    ),
-];
-
-echo json_encode($result) . PHP_EOL;

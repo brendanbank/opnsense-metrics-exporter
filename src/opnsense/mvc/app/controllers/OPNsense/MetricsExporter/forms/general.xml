@@ -9,12 +9,12 @@
         <id>general.interval</id>
         <label>Polling Interval (seconds)</label>
         <type>text</type>
-        <help>How often to poll gateway status from dpinger sockets. Valid range: 5-300 seconds.</help>
+        <help>How often to collect metrics. Valid range: 5-300 seconds.</help>
     </field>
     <field>
-        <id>general.outputpath</id>
-        <label>Output Path</label>
+        <id>general.outputdir</id>
+        <label>Output Directory</label>
         <type>text</type>
-        <help>Path to write the Prometheus metrics file. Default writes to the node_exporter textfile collector directory.</help>
+        <help>Directory to write Prometheus metrics files. Default is the node_exporter textfile collector directory. Must end with /.</help>
     </field>
 </form>

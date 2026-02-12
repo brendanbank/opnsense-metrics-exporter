@@ -1,4 +1,3 @@
-#!/usr/local/bin/php
 <?php
 
 /*
@@ -27,42 +26,41 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-require_once __DIR__ . '/lib/collector_loader.php';
+/**
+ * Discover collector classes from PHP files in a directory.
+ *
+ * Each file in $dir should define a class named ucfirst(basename) + "Collector".
+ * For example, gateway.php should define GatewayCollector.
+ *
+ * @param string $dir Path to the collectors directory
+ * @return array Map of type => class name, e.g. ['gateway' => 'GatewayCollector']
+ */
+function load_collectors(string $dir): array
+{
+    $collectors = [];
+    $files = glob($dir . '/*.php');
 
-define('CONFIG_PATH', '/usr/local/etc/metrics_exporter.conf');
-define('COLLECTORS_DIR', __DIR__ . '/collectors');
-
-$config_collectors = [];
-$json = @file_get_contents(CONFIG_PATH);
-if ($json !== false) {
-    $config = json_decode($json, true);
-    if ($config !== null) {
-        $config_collectors = $config['collectors'] ?? [];
+    if ($files === false) {
+        return $collectors;
     }
-}
 
-$all_collectors = load_collectors(COLLECTORS_DIR);
-$collectors_output = [];
+    foreach ($files as $file) {
+        $type = basename($file, '.php');
+        $class = ucfirst($type) . 'Collector';
 
-foreach ($all_collectors as $type => $class) {
-    if (!empty($config_collectors[$type])) {
-        try {
-            $collectors_output[] = $class::status();
-        } catch (\Throwable $e) {
-            $collectors_output[] = [
-                'type' => $type,
-                'name' => $class::name(),
-                'rows' => [],
-            ];
+        require_once $file;
+
+        if (!class_exists($class, false)) {
+            syslog(LOG_WARNING, sprintf(
+                'Metrics exporter: collector file %s does not define expected class %s',
+                $file,
+                $class
+            ));
+            continue;
         }
+
+        $collectors[$type] = $class;
     }
+
+    return $collectors;
 }
-
-$result = [
-    'collectors' => $collectors_output,
-    'node_exporter_installed' => file_exists(
-        '/usr/local/etc/inc/plugins.inc.d/node_exporter.inc'
-    ),
-];
-
-echo json_encode($result) . PHP_EOL;

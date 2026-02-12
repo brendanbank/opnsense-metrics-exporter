@@ -33,13 +33,19 @@ use OPNsense\Core\Backend;
 
 class StatusController extends ApiControllerBase
 {
-    public function gatewayAction()
+    public function collectorAction()
     {
         $backend = new Backend();
-        $response = json_decode(trim($backend->configdRun('metrics_exporter gateway-status')), true);
+        $response = json_decode(
+            trim($backend->configdRun('metrics_exporter collector-status')),
+            true
+        );
         if ($response !== null) {
             return $response;
         }
-        return ['status' => 'error', 'message' => 'Unable to fetch gateway status'];
+        return [
+            'status' => 'error',
+            'message' => 'Unable to fetch collector status',
+        ];
     }
 }

@@ -29,9 +29,69 @@
 namespace OPNsense\MetricsExporter\Api;
 
 use OPNsense\Base\ApiMutableModelControllerBase;
+use OPNsense\Core\Backend;
 
 class GeneralController extends ApiMutableModelControllerBase
 {
     protected static $internalModelName = 'general';
     protected static $internalModelClass = 'OPNsense\MetricsExporter\MetricsExporter';
+
+    /**
+     * Retrieve available collectors with their enabled state.
+     * @return array
+     */
+    public function collectorsAction()
+    {
+        $backend = new Backend();
+        $response = json_decode(
+            trim($backend->configdRun('metrics_exporter list-collectors')),
+            true
+        );
+        if ($response !== null) {
+            return ['collectors' => $response];
+        }
+        return ['collectors' => []];
+    }
+
+    /**
+     * Save collector enabled states to the model.
+     * @return array
+     * @throws \OPNsense\Base\UserException
+     */
+    public function saveCollectorsAction()
+    {
+        if (!$this->request->isPost()) {
+            return ['status' => 'error', 'message' => 'POST required'];
+        }
+
+        $mdl = $this->getModel();
+        $input = $this->request->getPost('collectors');
+
+        if (!is_array($input)) {
+            return ['status' => 'error', 'message' => 'Invalid input'];
+        }
+
+        $collectors = [];
+        foreach ($input as $type => $enabled) {
+            if (preg_match('/^[a-z_]+$/', $type)) {
+                $collectors[$type] = (bool)$enabled;
+            }
+        }
+
+        $mdl->collectors = json_encode($collectors);
+        $valMsgs = $mdl->performValidation();
+        foreach ($valMsgs as $msg) {
+            if ($msg->getType() === 'error') {
+                return [
+                    'status' => 'error',
+                    'message' => (string)$msg->getMessage(),
+                ];
+            }
+        }
+
+        $mdl->serializeToConfig();
+        \OPNsense\Core\Config::getInstance()->save();
+
+        return ['status' => 'ok'];
+    }
 }

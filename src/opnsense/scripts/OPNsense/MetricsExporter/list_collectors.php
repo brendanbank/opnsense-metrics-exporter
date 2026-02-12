@@ -28,9 +28,8 @@
  */
 
 /**
- * Generate metrics exporter config file from OPNsense model/config.
- * Discovers collectors and merges their defaults with user overrides.
- * Runs as root via configd before starting the unprivileged daemon.
+ * List available collectors with their enabled state.
+ * Called by configd [list-collectors] action, used by the Settings page API.
  */
 
 require_once 'config.inc';
@@ -39,22 +38,6 @@ require_once __DIR__ . '/lib/collector_loader.php';
 define('COLLECTORS_DIR', __DIR__ . '/collectors');
 
 $mdl = new \OPNsense\MetricsExporter\MetricsExporter();
-
-$interval = (int)$mdl->interval->__toString();
-if ($interval < 5 || $interval > 300) {
-    $interval = 15;
-}
-
-$outputdir = $mdl->outputdir->__toString();
-if (empty($outputdir) || strpos($outputdir, '..') !== false) {
-    $outputdir = '/var/tmp/node_exporter/';
-}
-if (substr($outputdir, -1) !== '/') {
-    $outputdir .= '/';
-}
-
-// Discover collectors and build enabled map
-$all_collectors = load_collectors(COLLECTORS_DIR);
 
 $overrides_json = $mdl->collectors->__toString();
 $overrides = [];
@@ -65,32 +48,19 @@ if (!empty($overrides_json)) {
     }
 }
 
-$collectors_config = [];
+$all_collectors = load_collectors(COLLECTORS_DIR);
+$result = [];
+
 foreach ($all_collectors as $type => $class) {
-    if (isset($overrides[$type])) {
-        $collectors_config[$type] = (bool)$overrides[$type];
-    } else {
-        $collectors_config[$type] = $class::defaultEnabled();
-    }
+    $default = $class::defaultEnabled();
+    $enabled = isset($overrides[$type]) ? (bool)$overrides[$type] : $default;
+
+    $result[] = [
+        'type' => $type,
+        'name' => $class::name(),
+        'enabled' => $enabled,
+        'default' => $default,
+    ];
 }
 
-$config = [
-    'interval' => $interval,
-    'outputdir' => $outputdir,
-    'collectors' => $collectors_config,
-];
-
-// Write config file (readable by unprivileged daemon)
-$config_path = '/usr/local/etc/metrics_exporter.conf';
-file_put_contents($config_path, json_encode($config, JSON_PRETTY_PRINT) . "\n");
-chmod($config_path, 0644);
-
-// Ensure output directory exists and is writable by the daemon (runs as nobody)
-if (!is_dir($outputdir)) {
-    mkdir($outputdir, 01777, true);
-} else {
-    $perms = fileperms($outputdir);
-    if (($perms & 0002) === 0) {
-        chmod($outputdir, $perms | 0003);
-    }
-}
+echo json_encode($result) . PHP_EOL;

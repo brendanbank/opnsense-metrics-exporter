@@ -1,0 +1,24 @@
+<model>
+    <mount>//OPNsense/GatewayExporter</mount>
+    <description>Gateway Exporter configuration</description>
+    <version>1.0.1</version>
+    <items>
+        <enabled type="BooleanField">
+            <Default>0</Default>
+            <Required>Y</Required>
+        </enabled>
+        <interval type="IntegerField">
+            <Default>15</Default>
+            <Required>Y</Required>
+            <MinimumValue>5</MinimumValue>
+            <MaximumValue>300</MaximumValue>
+            <ValidationMessage>Interval must be between 5 and 300 seconds.</ValidationMessage>
+        </interval>
+        <outputpath type="TextField">
+            <Default>/var/tmp/node_exporter/gateway.prom</Default>
+            <Required>Y</Required>
+            <Mask>/^\/(?!.*\.\.)[a-zA-Z0-9\/_.\-]{1,200}\.prom$/</Mask>
+            <ValidationMessage>Path must be absolute, end in .prom, and contain only alphanumeric characters, slashes, underscores, hyphens, and dots. Path traversal (..) is not allowed.</ValidationMessage>
+        </outputpath>
+    </items>
+</model>

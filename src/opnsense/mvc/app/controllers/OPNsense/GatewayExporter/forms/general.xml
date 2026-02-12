@@ -1,0 +1,20 @@
+<form>
+    <field>
+        <id>general.enabled</id>
+        <label>Enabled</label>
+        <type>checkbox</type>
+        <help>Enable the gateway exporter daemon.</help>
+    </field>
+    <field>
+        <id>general.interval</id>
+        <label>Polling Interval (seconds)</label>
+        <type>text</type>
+        <help>How often to poll gateway status from dpinger sockets. Valid range: 5-300 seconds.</help>
+    </field>
+    <field>
+        <id>general.outputpath</id>
+        <label>Output Path</label>
+        <type>text</type>
+        <help>Path to write the Prometheus metrics file. Default writes to the node_exporter textfile collector directory.</help>
+    </field>
+</form>

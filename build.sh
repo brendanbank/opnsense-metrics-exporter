@@ -11,7 +11,7 @@
 
 set -e
 
-FIREWALL="${1:-${FIREWALL:-${FIREWALL:?Set FIREWALL env var or pass hostname as argument}}}"
+FIREWALL="${1:-${FIREWALL:?Set FIREWALL env var or pass hostname as argument}}"
 REMOTE_DIR="/tmp/gw_exporter_build"
 PLUGIN_SUBDIR="net-mgmt/gateway_exporter"
 LOCAL_DIST="dist"

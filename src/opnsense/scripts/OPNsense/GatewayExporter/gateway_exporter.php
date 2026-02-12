@@ -216,7 +216,8 @@ function format_prometheus(array $metrics): string
 {
     $lines = [];
 
-    $lines[] = '# HELP opnsense_gateway_status Gateway status (0=down, 1=up, 2=loss, 3=delay, 4=delay+loss, 5=unknown).';
+    $lines[] = '# HELP opnsense_gateway_status Gateway status'
+        . ' (0=down, 1=up, 2=loss, 3=delay, 4=delay+loss, 5=unknown).';
     $lines[] = '# TYPE opnsense_gateway_status gauge';
     foreach ($metrics as $m) {
         $lines[] = sprintf(

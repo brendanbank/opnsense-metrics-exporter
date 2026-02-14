@@ -35,7 +35,8 @@ ssh "${FIREWALL}" "
     cd ${REMOTE_PLUGINS} &&
     git fetch origin &&
     git checkout add-metrics-exporter &&
-    git reset --hard origin/add-metrics-exporter
+    git reset --hard origin/add-metrics-exporter &&
+    : > ${REMOTE_PLUGINS}/Mk/devel.mk
 "
 
 # Sync local source to the remote plugin directory

@@ -2,15 +2,29 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Firewalls
+
+SSH connects as an unprivileged user (not root). Use `sudo` for privileged commands (`pkg`, `configctl`, reading config.xml, `ps` to see other users' processes). Firewall hostnames and SSH user are stored in MEMORY.md (not committed).
+
 ## Build and Deploy
 
 ```sh
 ./build.sh <firewall-hostname>    # build .pkg on firewall, install, download to dist/
 ```
 
-This syncs `Makefile`, `pkg-descr`, and `src/` to the firewall's plugins fork, builds with `make package`, installs the `.pkg`, and downloads it to `dist/`. Requires SSH access to an OPNsense box.
+This syncs `Makefile`, `pkg-descr`, and `src/` to the firewall's plugins fork, builds with `make package`, installs the `.pkg`, and downloads it to `dist/`.
 
-**Verification** (run on an OPNsense box with `opnsense/plugins` and `opnsense/core` repos):
+**Manual deploy** (to a firewall that wasn't the build host):
+```sh
+scp dist/os-metrics_exporter-*.pkg <firewall>:/tmp/
+ssh <firewall> "sudo pkg install -y /tmp/os-metrics_exporter-*.pkg"
+ssh <firewall> "sudo configctl firmware resync"      # register plugin in OPNsense firmware config
+ssh <firewall> "sudo configctl metrics_exporter restart"
+```
+
+Without `configctl firmware resync`, plugins installed via `pkg` (not the firmware UI) show as "misconfigured" in the OPNsense dashboard.
+
+**Verification** (run on firewall in the plugins repo under `sysutils/metrics_exporter`):
 ```sh
 make lint       # PHP syntax, model validation, class-filename match, executable perms
 make style      # PSR-12 coding standard
@@ -18,9 +32,13 @@ make style      # PSR-12 coding standard
 
 **Service management** (on firewall):
 ```sh
-configctl metrics_exporter start|stop|restart|status
-configctl metrics_exporter reconfigure    # reload config via SIGHUP
+sudo configctl metrics_exporter start|stop|restart|status
+sudo configctl metrics_exporter reconfigure    # reload config via SIGHUP
 ```
+
+## Syncing to Plugins Repo
+
+A plugins-repo-format copy is maintained in a fork on branch `add-metrics-exporter` under `sysutils/metrics_exporter/`. Only `Makefile`, `pkg-descr`, and `src/` are synced (no `build.sh`, `dist/`, `README.md`, `.gitignore`, `CLAUDE.md`). Local paths are stored in MEMORY.md.
 
 ## Architecture
 

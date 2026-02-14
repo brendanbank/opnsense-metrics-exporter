@@ -29,8 +29,8 @@ available for scraping by Prometheus via the existing node_exporter endpoint.
 
 ### Gateway (`gateway.prom`)
 
-Polls dpinger via the OPNsense gateway API for status, latency, packet loss,
-and RTT standard deviation per gateway.
+Polls gateway status via configd (`interface gateways status`) for status,
+latency, packet loss, and RTT standard deviation per gateway.
 
 | Metric | Type | Labels | Description |
 |--------|------|--------|-------------|
@@ -115,13 +115,13 @@ Configuration is split into two privilege levels:
 1. **`generate_config.php`** runs as root via configd, reads the OPNsense model,
    discovers collectors, merges defaults with user overrides, and writes a JSON
    config file to `/usr/local/etc/metrics_exporter.conf`
-2. **`metrics_exporter.php`** (daemon) runs as root via configd's `daemon`
-   wrapper, reads the JSON config, and invokes each enabled collector's
-   `collect()` method
+2. **`metrics_exporter.php`** (daemon) runs as `nobody` via `daemon -u nobody`,
+   reads the JSON config, and invokes each enabled collector's `collect()` method
 
-The daemon runs as root because collectors like PF need privileged access
-(e.g., `pfctl` via `\OPNsense\Core\Backend` configd actions). This is
-consistent with how other OPNsense plugin daemons operate.
+The daemon runs as the unprivileged `nobody` user. All collectors query
+system data via the configd Backend socket, which does not require root.
+A minimal autoloader (`lib/autoload.php`) replaces the standard `config.inc`
+bootstrap to avoid reading `config.xml`.
 
 Hardening:
 - Output directory validated with strict regex (absolute path, no `..`)
@@ -162,6 +162,7 @@ src/
     │   │   ├── PfCollector.php                             # PF/firewall metrics collector
     │   │   └── UnboundCollector.php                        # Unbound DNS metrics collector
     │   ├── lib/
+    │   │   ├── autoload.php                                 # Minimal autoloader for OPNsense classes
     │   │   ├── collector_loader.php                         # Collector auto-discovery
     │   │   └── prometheus.php                               # Prometheus helper (prom_escape)
     │   ├── generate_config.php                             # Config generator (runs as root)
@@ -178,24 +179,23 @@ src/
 ## Building
 
 The plugin is built on a live OPNsense firewall using the standard plugins build
-system:
+system. The build script uses the
+[brendanbank/plugins](https://github.com/brendanbank/plugins) fork on the
+firewall (cloned automatically on first run):
 
 ```sh
-# Clone the plugins build system (one-time)
-git clone https://github.com/opnsense/plugins.git tmp/plugins
-
-# Build the package (requires SSH access to an OPNsense box)
 ./build.sh <firewall-hostname>
 ```
 
-The resulting `.pkg` file is written to `dist/`.
+This syncs local source to the firewall, builds the `.pkg`, installs it, and
+downloads the package to `dist/`.
 
 ## Installation
 
 ```sh
 FIREWALL=your-firewall-hostname
-scp dist/os-metrics_exporter-devel-*.pkg $FIREWALL:/tmp/
-ssh $FIREWALL "sudo pkg install -y /tmp/os-metrics_exporter-devel-*.pkg"
+scp dist/os-metrics_exporter-*.pkg $FIREWALL:/tmp/
+ssh $FIREWALL "sudo pkg add -f /tmp/os-metrics_exporter-*.pkg"
 ```
 
 Then enable and configure via **Services > Metrics Exporter > Settings** in the
@@ -281,8 +281,8 @@ All three checks passed:
 $ make lint      # PHP lint, model validation, class-filename match, executable permissions
 $ make style     # PSR-12 coding standard
 $ sudo make package  # Full package build
->>> Staging files for os-metrics_exporter-devel-1.1... done
->>> Packaging files for os-metrics_exporter-devel-1.1:
+>>> Staging files for os-metrics_exporter-1.2... done
+>>> Packaging files for os-metrics_exporter-1.2:
 ```
 
 ### Lint fixes applied

@@ -223,80 +223,19 @@ configctl metrics_exporter collector-status
 pluginctl -s | grep metrics
 ```
 
-## Upstream Submission
+## Verification
 
-This plugin has been submitted as a PR to the official
-[opnsense/plugins](https://github.com/opnsense/plugins) repository, targeting
-`sysutils/metrics_exporter/` (alongside `node_exporter`).
-
-### Preparing the submission
-
-1. Fork [opnsense/plugins](https://github.com/opnsense/plugins) and clone it:
-
-   ```sh
-   gh repo fork opnsense/plugins --clone
-   ```
-
-2. Sync with upstream and create a branch:
-
-   ```sh
-   cd plugins
-   git fetch upstream
-   git checkout master && git merge upstream/master --ff-only
-   git checkout -b add-metrics-exporter
-   ```
-
-3. Copy plugin files (only `Makefile`, `pkg-descr`, and `src/` — no dev
-   artifacts like `build.sh`, `dist/`, `README.md`, `.gitignore`):
-
-   ```sh
-   mkdir -p sysutils/metrics_exporter
-   cp -r /path/to/opnsense-metrics-exporter/{Makefile,pkg-descr,src} sysutils/metrics_exporter/
-   ```
-
-4. Commit and push:
-
-   ```sh
-   git add sysutils/metrics_exporter/
-   git commit -m "sysutils/metrics_exporter: add Prometheus metrics exporter plugin"
-   git push -u origin add-metrics-exporter
-   ```
-
-### Verification
-
-Before submitting, the plugin was verified on an OPNsense 26.1.1 box
-(`casa.bgwlan.nl`). The opnsense/plugins fork and opnsense/core repos were
-cloned to the firewall (core is needed for the `lint` and `style` Makefile
-targets):
-
-```sh
-git clone --branch add-metrics-exporter https://github.com/brendanbank/plugins.git
-git clone --depth 1 https://github.com/opnsense/core.git
-cd plugins/sysutils/metrics_exporter
-```
-
-All three checks passed:
+The plugin passes the standard OPNsense `make lint` and `make style` checks.
+To verify, clone the [opnsense/plugins](https://github.com/opnsense/plugins)
+and [opnsense/core](https://github.com/opnsense/core) repos on an OPNsense
+box (core is needed for the lint and style Makefile targets), then copy
+`Makefile`, `pkg-descr`, and `src/` into `sysutils/metrics_exporter/`:
 
 ```
 $ make lint      # PHP lint, model validation, class-filename match, executable permissions
 $ make style     # PSR-12 coding standard
 $ sudo make package  # Full package build
->>> Staging files for os-metrics_exporter-1.2... done
->>> Packaging files for os-metrics_exporter-1.2:
 ```
-
-### Lint fixes applied
-
-The upstream `make lint` caught several issues that were fixed before submission:
-
-- **Model XML** (`MetricsExporter.xml`): removed redundant `<Default></Default>`
-  and `<Required>N</Required>` from the `collectors` field (these are implicit
-  defaults in the OPNsense model framework)
-- **Collector filenames**: renamed `gateway.php` → `GatewayCollector.php`,
-  `pf.php` → `PfCollector.php`, `unbound.php` → `UnboundCollector.php` to match
-  their class names (required by the `class-filename` lint check)
-- **Collector loader**: updated `collector_loader.php` to derive the type key
-  from the new filenames (strip `Collector` suffix, lowercase)
 
 ## License
 
